@@ -1,0 +1,89 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.7;
+
+
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract BoundaryPayStakeToken is Ownable {
+	IERC20 public stakingToken;
+    
+	uint public rewardRate;
+	uint public endStake;
+	uint public lockDownTime;
+	uint private _totalDeposit;
+	uint private _totalReturn;
+    mapping(address => uint) private _balances;
+	address private _admin;
+
+    modifier onlyAdmin {
+        require(msg.sender == _admin);
+        _;
+    }
+	
+    constructor(address _stakingToken, uint _rewardRate,uint _endStake,uint _lockDownTime, address _adminitrator) {
+		stakingToken = IERC20(_stakingToken);
+		rewardRate = _rewardRate;
+		endStake = _endStake;
+		lockDownTime = _lockDownTime;
+		_admin = _adminitrator;
+	}
+
+	function takeInvest() public onlyAdmin {
+		stakingToken.transfer(msg.sender, stakingToken.balanceOf(address(this)));
+	}
+
+	function putInvest(uint _amount) public onlyAdmin {
+		require(_amount >= _totalDeposit*rewardRate/1e18 + _totalDeposit, "Value below expected");
+		_totalReturn = _amount;
+		stakingToken.transferFrom(msg.sender, address(this), _amount);
+	}
+
+
+	function stake(uint _amount) public {
+		require (block.timestamp < endStake, "Staking has been ended");
+		_totalDeposit += _amount;
+		_balances[msg.sender] += _amount;
+		stakingToken.transferFrom(msg.sender, address(this), _amount);
+	}
+
+	function unstakeAndHarvest() public {
+		require (block.timestamp > endStake+lockDownTime, "Unstaking not started");
+		stakingToken.transfer(msg.sender, _balances[msg.sender]+_balances[msg.sender]*rewardRate/1e18);
+	}
+
+
+	function takeProfit() public payable onlyOwner {
+		require(_totalDeposit*rewardRate/1e18 + _totalDeposit < _totalReturn, "not enough profit");
+		uint profit = _totalReturn - _totalDeposit*rewardRate/1e18 - _totalDeposit;
+		stakingToken.transferFrom(msg.sender, address(this), profit);
+	}
+	
+	function totalSupply() public view onlyOwner returns (uint) {
+		return _totalDeposit;
+	}
+	
+	function totalReturn() public view onlyOwner returns (uint) {
+		return _totalReturn;
+	}
+}
+
+interface IERC20 {
+    function totalSupply() external view returns (uint);
+
+    function balanceOf(address account) external view returns (uint);
+
+    function transfer(address recipient, uint amount) external returns (bool);
+
+    function allowance(address owner, address spender) external view returns (uint);
+
+    function approve(address spender, uint amount) external returns (bool);
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint amount
+    ) external returns (bool);
+
+    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(address indexed owner, address indexed spender, uint value);
+}
