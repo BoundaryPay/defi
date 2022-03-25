@@ -5,20 +5,20 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract BoundaryPayStake is Ownable {
-    uint public rewardRate;
+	uint public rewardRate;
 	uint public endStake;
 	uint public lockDownTime;
 	uint private _totalDeposit;
 	uint private _totalReturn;
-    mapping(address => uint) private _balances;
+	mapping(address => uint) private _balances;
 	address private _admin;
 
-    modifier onlyAdmin {
-        require(msg.sender == _admin);
-        _;
-    }
-	
-    constructor(uint _rewardRate,uint _endStake,uint _lockDownTime, address _adminitrator) {
+	modifier onlyAdmin {
+		require(msg.sender == _admin);
+		_;
+	}
+
+	constructor(uint _rewardRate,uint _endStake,uint _lockDownTime, address _adminitrator) {
 		rewardRate = _rewardRate;
 		endStake = _endStake;
 		lockDownTime = _lockDownTime;

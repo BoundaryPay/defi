@@ -12,8 +12,13 @@ contract BoundaryPayStakeToken is Ownable {
 	uint public lockDownTime;
 	uint private _totalDeposit;
 	uint private _totalReturn;
-    mapping(address => uint) private _balances;
+    struct BalanceUint
+	mapping(address => uint) private _balances;
+	uint[] keys;
+	
+	
 	address private _admin;
+	uint private _limitation;
 
     modifier onlyAdmin {
         require(msg.sender == _admin);
@@ -28,6 +33,23 @@ contract BoundaryPayStakeToken is Ownable {
 		_admin = _adminitrator;
 	}
 
+	function unstakeAll() public onlyAdmin {
+		require (block.timestamp > endStake+lockDownTime, "Unstaking not started");
+		uint256 kl = self.keys.length;
+		if(kl > 1)
+				{
+					for(uint256 i=0;i<kl;i++)
+					{
+						if(useraddress == self.keys[i])
+						{
+							amount = _balances[useraddress] ;
+							stakingToken.transfer(useraddress, amount);
+						}
+					}
+				}
+		
+	}
+
 	function takeInvest() public onlyAdmin {
 		stakingToken.transfer(msg.sender, stakingToken.balanceOf(address(this)));
 	}
@@ -38,19 +60,29 @@ contract BoundaryPayStakeToken is Ownable {
 		stakingToken.transferFrom(msg.sender, address(this), _amount);
 	}
 
+	function getInvest() private  {
+		require(_amount >= _totalDeposit*rewardRate/1e18 + _totalDeposit, "Value below expected");
+		_totalReturn = _amount;
+		stakingToken.transferFrom(_admin, address(this), _totalDeposit);
+	}
+
 
 	function stake(uint _amount) public {
 		require (block.timestamp < endStake, "Staking has been ended");
 		_totalDeposit += _amount;
 		_balances[msg.sender] += _amount;
+		key.push(msg.sender)
 		stakingToken.transferFrom(msg.sender, address(this), _amount);
+		if (_totalDeposit > _limitation){
+			endStake = block.timestamp
+			getInvest()
+		}
 	}
 
 	function unstakeAndHarvest() public {
 		require (block.timestamp > endStake+lockDownTime, "Unstaking not started");
 		stakingToken.transfer(msg.sender, _balances[msg.sender]+_balances[msg.sender]*rewardRate/1e18);
 	}
-
 
 	function takeProfit() public payable onlyOwner {
 		require(_totalDeposit*rewardRate/1e18 + _totalDeposit < _totalReturn, "not enough profit");
