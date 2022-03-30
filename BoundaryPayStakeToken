@@ -12,9 +12,11 @@ contract BoundaryPayStakeToken is Ownable {
 	uint public lockDownTime;
 	uint private _totalDeposit;
 	uint private _totalReturn;
+	uint private _targetAddress;
     struct BalanceUint
-	mapping(address => uint) private _balances;
-	uint[] keys;
+		mapping(address => uint) private _balances;
+		uint[] keys;
+
 	
 	
 	address private _admin;
@@ -43,27 +45,27 @@ contract BoundaryPayStakeToken is Ownable {
 						if(useraddress == self.keys[i])
 						{
 							amount = _balances[useraddress] ;
-							stakingToken.transfer(useraddress, amount);
+							stakingToken.transfer(useraddress, amount+amount*rewardRate/1e18);
 						}
 					}
 				}
 		
 	}
 
-	function takeInvest() public onlyAdmin {
+	function depositeBalance() public onlyAdmin {
 		stakingToken.transfer(msg.sender, stakingToken.balanceOf(address(this)));
 	}
 
-	function putInvest(uint _amount) public onlyAdmin {
+	function getInvest(uint _amount) public onlyAdmin {
 		require(_amount >= _totalDeposit*rewardRate/1e18 + _totalDeposit, "Value below expected");
 		_totalReturn = _amount;
 		stakingToken.transferFrom(msg.sender, address(this), _amount);
 	}
 
-	function getInvest() private  {
+	function putInvest() private  {
 		require(_amount >= _totalDeposit*rewardRate/1e18 + _totalDeposit, "Value below expected");
 		_totalReturn = _amount;
-		stakingToken.transferFrom(_admin, address(this), _totalDeposit);
+		stakingToken.transferFrom(_admin, _targetAddress, _totalDeposit);
 	}
 
 
@@ -75,7 +77,7 @@ contract BoundaryPayStakeToken is Ownable {
 		stakingToken.transferFrom(msg.sender, address(this), _amount);
 		if (_totalDeposit > _limitation){
 			endStake = block.timestamp
-			getInvest()
+			putInvest()
 		}
 	}
 
